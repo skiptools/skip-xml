@@ -1,4 +1,4 @@
-# skip-sql
+# skip-xml
 
-SQL module for [Skip](https://skip.tools") apps.
+XML module for [Skip](https://skip.tools") apps.
 
