@@ -16,7 +16,7 @@ let package = Package(
         .package(url: "https://source.skip.tools/skip-foundation.git", from: "0.0.0"),
     ],
     targets: [
-    .target(name: "SkipXML", plugins: [.plugin(name: "preflight", package: "skip")]),
+    .target(name: "SkipXML", plugins: [.plugin(name: "skippy", package: "skip")]),
     .target(name: "SkipXMLKt", dependencies: [
         "SkipXML",
         .product(name: "SkipUnitKt", package: "skip-unit"),
@@ -25,7 +25,7 @@ let package = Package(
     ], resources: [.process("Skip")], plugins: [.plugin(name: "transpile", package: "skip")]),
     .testTarget(name: "SkipXMLTests", dependencies: [
         "SkipXML"
-    ], plugins: [.plugin(name: "preflight", package: "skip")]),
+    ], plugins: [.plugin(name: "skippy", package: "skip")]),
     .testTarget(name: "SkipXMLKtTests", dependencies: [
         "SkipXMLKt",
         .product(name: "SkipUnit", package: "skip-unit"),
