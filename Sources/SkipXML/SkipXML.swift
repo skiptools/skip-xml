@@ -324,9 +324,8 @@ public struct XMLNode : Hashable {
             }
         }
         #else
-        let xmlString = String(data: data, encoding: String.Encoding.utf8) ?? ""
-
         // Robolectric throws: java.lang.UnsatisfiedLinkError: 'void org.apache.harmony.xml.ExpatParser.staticInitialize(java.lang.String)'
+        //let xmlString = String(data: data, encoding: String.Encoding.utf8) ?? ""
         //try android.util.Xml.parse(xmlString, delegate)
 
         // if we don't set the system property, then we can get the error:
