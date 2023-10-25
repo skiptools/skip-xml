@@ -8,8 +8,6 @@ import XCTest
 import Foundation
 import SkipXML
 
-// SKIP INSERT: @org.junit.runner.RunWith(androidx.test.ext.junit.runners.AndroidJUnit4::class)
-// SKIP INSERT: @org.robolectric.annotation.Config(manifest=org.robolectric.annotation.Config.NONE, sdk = [33])
 @available(macOS 13, macCatalyst 16, iOS 16, tvOS 16, watchOS 8, *)
 final class SkipXMLTests: XCTestCase {
     func testSkipXML() throws {
@@ -22,7 +20,7 @@ final class SkipXMLTests: XCTestCase {
         """)
 
 //        XCTAssertEqual(try roundtrip(xml: #"<x><y a="1" b="true"><z>txt</z></y></x>"#), """
-//        <?xml version="1.0" encoding="UTF-8"?><x><y a="" b=""><z></z></y></x>
+//        <?xml version="1.0" encoding="UTF-8"?><x><y a="1" b="true"><z>txt</z></y></x>
 //        """)
     }
 

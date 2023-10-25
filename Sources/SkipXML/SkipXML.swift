@@ -218,12 +218,12 @@ public struct XMLNode : Hashable {
         let quot = entities.contains(.quot)
         let apos = entities.contains(.apos)
         for char in content {
-//            if char == "<" && lt == true { str.append("&lt;") }
-//            else if char == "&" && amp == true { str.append("&amp;") }
-//            else if char == ">" && gt == true { str.append("&gt;") }
-//            else if char == "\"" && quot == true { str.append("&quot;") }
-//            else if char == "'" && apos == true { str.append("&apos;") }
-//            else { str.append(char) }
+            if char == "<" && lt == true { str += "&lt;" }
+            else if char == "&" && amp == true { str += "&amp;" }
+            else if char == ">" && gt == true { str += "&gt;" }
+            else if char == "\"" && quot == true { str += "&quot;" }
+            else if char == "'" && apos == true { str += "&apos;" }
+            else { str += String(char) }
         }
         return str
     }
@@ -326,32 +326,12 @@ public struct XMLNode : Hashable {
         #else
         let xmlString = String(data: data, encoding: String.Encoding.utf8) ?? ""
 
-        // this would work nicely, since `org.xml.sax.ContentHandler` and `Foundation.XMLParserDelegate` both conform to the SAX handler API, but the Robolectric classes are not mocked: java.lang.UnsatisfiedLinkError: 'void org.apache.harmony.xml.ExpatParser.staticInitialize(java.lang.String)'
+        // Robolectric throws: java.lang.UnsatisfiedLinkError: 'void org.apache.harmony.xml.ExpatParser.staticInitialize(java.lang.String)'
         //try android.util.Xml.parse(xmlString, delegate)
 
-        let factory = org.xmlpull.v1.XmlPullParserFactory.newInstance()
-        let parser = factory.newPullParser()
-        parser.setInput(java.io.StringReader(xmlString))
-
-        delegate.parserDidStartDocument(())
-        while (parser.eventType != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {
-            switch parser.eventType {
-            case org.xmlpull.v1.XmlPullParser.START_TAG:
-                var attributeDict: [String : String] = [:]
-                for i in 0..<parser.attributeCount {
-                    attributeDict[parser.getAttributeName(i)] = parser.getAttributeValue(i)
-                }
-                delegate.parser((), didStartElement: parser.name, namespaceURI: parser.namespace, qualifiedName: nil, attributes: attributeDict)
-                
-            case org.xmlpull.v1.XmlPullParser.TEXT:
-                delegate.parser((), foundCharacters: parser.text)
-
-            case org.xmlpull.v1.XmlPullParser.END_TAG:
-                delegate.parser((), didEndElement: parser.name, namespaceURI: parser.namespace, qualifiedName: nil)
-            }
-            parser.next()
-        }
-        delegate.parserDidEndDocument(())
+        let reader = org.xml.sax.helpers.XMLReaderFactory.createXMLReader()
+        reader.setContentHandler(delegate)
+        reader.parse(org.xml.sax.InputSource(java.io.ByteArrayInputStream(data.platformData)))
         #endif
 
         if delegate.elements.count != 1 {
@@ -450,16 +430,37 @@ public struct XMLNode : Hashable {
         }
 
 
-//        #if SKIP
-//        // MARK: org.xml.sax.ContentHandler implementation
-//        override func startElement(uri: String, localName: String, qName: String, attributes: org.xml.sax.Attributes) {
-//            parser((), didStartElement: localName, namespaceURI: uri, qualifiedName: qName, attributes: [:])
-//        }
-//
-//        override func endElement(uri: String, localName: String, qName: String) {
-//            parser((), didEndElement: localName, namespaceURI: uri, qualifiedName: qName)
-//        }
-//        #endif
+        #if SKIP
+        // MARK: org.xml.sax.ContentHandler implementation
+
+        override func startDocument() {
+            parserDidStartDocument(())
+        }
+
+        override func endDocument() {
+            parserDidEndDocument(())
+        }
+
+        override func characters(ch: CharArray, start: Int, length: Int) {
+            parser((), foundCharacters: String(ch, start, length))
+        }
+
+        override func ignorableWhitespace(ch: CharArray, start: Int, length: Int) {
+            parser((), foundIgnorableWhitespace: String(ch, start, length))
+        }
+
+        override func processingInstruction(target: String, data: String) {
+            parser((), foundProcessingInstructionWithTarget: target, data: data)
+        }
+
+        override func startElement(uri: String, localName: String, qName: String, attributes: org.xml.sax.Attributes) {
+            parser((), didStartElement: localName, namespaceURI: uri, qualifiedName: qName, attributes: [:])
+        }
+
+        override func endElement(uri: String, localName: String, qName: String) {
+            parser((), didEndElement: localName, namespaceURI: uri, qualifiedName: qName)
+        }
+        #endif
     }
 
 //    public struct ParseError : Error, Hashable {
