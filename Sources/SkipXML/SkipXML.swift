@@ -4,9 +4,6 @@
 // under the terms of the GNU Lesser General Public License 3.0
 // as published by the Free Software Foundation https://fsf.org
 
-#if canImport(ObjectiveC)
-import class ObjectiveC.NSObject
-#endif
 #if canImport(FoundationXML)
 import class FoundationXML.XMLParser
 import protocol FoundationXML.XMLParserDelegate
@@ -18,6 +15,7 @@ import protocol Foundation.XMLParserDelegate
 import Foundation
 
 #if !SKIP
+import class ObjectiveC.NSObject
 typealias ParserDelegateType = NSObject & XMLParserDelegate
 typealias XMLParserType = XMLParser
 #else
@@ -166,7 +164,7 @@ public struct XMLNode : Hashable {
     ///   - elementName: the element name of the child
     ///   - namespace: the list of namespaces
     /// - Returns: the filtered list of child elements matching the name and namespace URI.
-    public func childElements(named elementName: String, namespaceURI: String? = nil) -> [XMLNode] {
+//    public func childElements(named elementName: String, namespaceURI: String? = nil) -> [XMLNode] {
 //        if let namespaceURI = namespaceURI {
 //            // there may be more than a single alias to a given namespace
 //            guard let prefixes = self.namespaces?.filter({ $0.value == namespaceURI }).keys,
@@ -178,16 +176,16 @@ public struct XMLNode : Hashable {
 //                elementNames.contains(element.elementName)
 //            }
 //        } else {
-            return self.elementChildren
+//            return self.elementChildren
 //        }
-    }
+//    }
 
     /// Returns the value of the given attribute, optionally mapped with the given URL
     /// - Parameters:
     ///   - key: the attribute key
     ///   - namespace: the namespace of the key
     /// - Returns: the value of the attribute
-    public func attributeValue(key: String, namespaceURI: String? = nil) -> String? {
+//    public func attributeValue(key: String, namespaceURI: String? = nil) -> String? {
 //        if let namespaceURI = namespaceURI {
 //            // there may be more than a single alias to a given namespace
 //            guard let prefixes = self.namespaces?.filter({ $0.value == namespaceURI }).keys,
@@ -201,9 +199,9 @@ public struct XMLNode : Hashable {
 //            }
 //            return nil
 //        } else {
-            return self.attributes[key]
+//            return self.attributes[key]
 //        }
-    }
+//    }
 
 
     /// Returns the string with the given XML entites escaped; the default does not include single apostrophes
@@ -438,6 +436,7 @@ public struct XMLNode : Hashable {
 
 
         #if SKIP
+
         // MARK: org.xml.sax.ContentHandler implementation
 
         override func startDocument() {
@@ -456,15 +455,19 @@ public struct XMLNode : Hashable {
             parser((), foundIgnorableWhitespace: String(ch, start, length))
         }
 
-        override func processingInstruction(target: String, data: String) {
+        override func processingInstruction(target: String, data: String?) {
             parser((), foundProcessingInstructionWithTarget: target, data: data)
         }
 
-        override func startElement(uri: String, localName: String, qName: String, attributes: org.xml.sax.Attributes) {
-            parser((), didStartElement: localName, namespaceURI: uri, qualifiedName: qName, attributes: [:])
+        override func startElement(uri: String?, localName: String, qName: String?, attributes: org.xml.sax.Attributes) {
+            var attrs: [String: String] = [:]
+            for i in 0..<attributes.length {
+                attrs[attributes.getLocalName(i)] = attributes.getValue(i)
+            }
+            parser((), didStartElement: localName.isEmpty ? qName ?? localName : localName , namespaceURI: uri, qualifiedName: qName, attributes: attrs)
         }
 
-        override func endElement(uri: String, localName: String, qName: String) {
+        override func endElement(uri: String?, localName: String, qName: String?) {
             parser((), didEndElement: localName, namespaceURI: uri, qualifiedName: qName)
         }
         #endif
