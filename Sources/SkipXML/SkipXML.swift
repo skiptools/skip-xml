@@ -329,9 +329,17 @@ public struct XMLNode : Hashable {
         // Robolectric throws: java.lang.UnsatisfiedLinkError: 'void org.apache.harmony.xml.ExpatParser.staticInitialize(java.lang.String)'
         //try android.util.Xml.parse(xmlString, delegate)
 
-        let reader = org.xml.sax.helpers.XMLReaderFactory.createXMLReader()
-        reader.setContentHandler(delegate)
-        reader.parse(org.xml.sax.InputSource(java.io.ByteArrayInputStream(data.platformData)))
+        // if we don't set the system property, then we can get the error:
+        // Android error: org.xml.sax.SAXException: Can't create default XMLReader; is system property org.xml.sax.driver set
+        //System.setProperty("org.xml.sax.driver", "org.apache.harmony.xml.ExpatReader")
+        // let reader = org.xml.sax.helpers.XMLReaderFactory.createXMLReader()
+        // reader.setContentHandler(delegate)
+        // reader.parse(org.xml.sax.InputSource(java.io.ByteArrayInputStream(data.platformData)))
+
+        let parserFactory = javax.xml.parsers.SAXParserFactory.newInstance()
+        let parser = parserFactory.newSAXParser()
+        parser.parse(java.io.ByteArrayInputStream(data.platformData), delegate)
+
         #endif
 
         if delegate.elements.count != 1 {
