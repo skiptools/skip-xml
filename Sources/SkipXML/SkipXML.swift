@@ -16,10 +16,12 @@ import Foundation
 
 #if !SKIP
 import class ObjectiveC.NSObject
-typealias ParserDelegateType = NSObject & XMLParserDelegate
+typealias ParserDelegateType = XMLParserDelegate
+typealias LexicalDelegateType = NSObject
 typealias XMLParserType = XMLParser
 #else
 typealias ParserDelegateType = org.xml.sax.helpers.DefaultHandler
+typealias LexicalDelegateType = org.xml.sax.ext.LexicalHandler
 typealias XMLParserType = Void
 #endif
 
@@ -213,20 +215,20 @@ public struct XMLNode : Hashable {
         let lt = entities.contains(.lt)
         let amp = entities.contains(.amp)
         let gt = entities.contains(.gt)
-        let quot = entities.contains(.quot)
+        //let quot = entities.contains(.quot)
         let apos = entities.contains(.apos)
         for char in content {
             if char == "<" && lt == true { str += "&lt;" }
             else if char == "&" && amp == true { str += "&amp;" }
             else if char == ">" && gt == true { str += "&gt;" }
-            else if char == "\"" && quot == true { str += "&quot;" }
+            //else if char == "\"" && quot == true { str += "&quot;" }
             else if char == "'" && apos == true { str += "&apos;" }
             else { str += String(char) }
         }
         return str
     }
 
-    public func xmlString(declaration: String = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>", quote: String = "\"", compactCloseTags: Bool = false, escape escapeEntities: Entity = [.lt, .amp, .gt], commentScriptCDATA: Bool = false, attributeSorter: ([String: String]) -> [(String, String)] = { Array($0).sorted(by: { $0.0 < $1.0 }) }) -> String {
+    public func xmlString(declaration: String = "<?xml version=\"1.0\"?>", quote: String = "\"", compactCloseTags: Bool = false, escape escapeEntities: Entity = [.lt, .amp, .gt], commentScriptCDATA: Bool = false, attributeSorter: ([String: String]) -> [(String, String)] = { Array($0).sorted(by: { $0.0 < $1.0 }) }) -> String {
         var str = ""
 
         // when we use single quotes for entites, we escape them; same for double-quotes
@@ -335,6 +337,7 @@ public struct XMLNode : Hashable {
 
         let parserFactory = javax.xml.parsers.SAXParserFactory.newInstance()
         let parser = parserFactory.newSAXParser()
+        parser.setProperty("http://xml.org/sax/properties/lexical-handler", delegate)
         parser.parse(java.io.ByteArrayInputStream(data.platformData), delegate)
 
         #endif
@@ -347,7 +350,7 @@ public struct XMLNode : Hashable {
     }
 
     /// A parser delegate that can be used with either `Foundation.XMLParserDelegate` or as a `org.xml.sax.ContentHandler`.
-    class ParserDelegate : ParserDelegateType {
+    class ParserDelegate : LexicalDelegateType, ParserDelegateType {
         var elements = Array<XMLNode>()
         var namespaces: [String: [String]] = [:]
         var parseErrors: [Error] = []
@@ -451,6 +454,29 @@ public struct XMLNode : Hashable {
             parser((), foundCharacters: String(ch, start, length))
         }
 
+        override func comment(ch: CharArray, start: Int, length: Int) {
+            parser((), foundComment: String(ch, start, length))
+        }
+
+        override func startCDATA() {
+            parser((), foundCDATA: Data())
+        }
+
+        override func endCDATA() {
+        }
+
+        override func startEntity(name: String) {
+        }
+
+        override func endEntity(name: String) {
+        }
+
+        override func startDTD(name: String, publicId: String, systemId: String) {
+        }
+
+        override func endDTD() {
+        }
+        
         override func ignorableWhitespace(ch: CharArray, start: Int, length: Int) {
             parser((), foundIgnorableWhitespace: String(ch, start, length))
         }
