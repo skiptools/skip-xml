@@ -228,7 +228,7 @@ public struct XMLNode : Hashable {
         return str
     }
 
-    public func xmlString(declaration: String = "<?xml version=\"1.0\"?>", quote: String = "\"", compactCloseTags: Bool = false, escape escapeEntities: Entity = [.lt, .amp, .gt], commentScriptCDATA: Bool = false, attributeSorter: ([String: String]) -> [(String, String)] = { Array($0).sorted(by: { $0.0 < $1.0 }) }) -> String {
+    public func xmlString(declaration: String? = "<?xml version=\"1.0\"?>\n", quote: String = "\"", compactCloseTags: Bool = false, escape escapeEntities: Entity = [.lt, .amp, .gt], commentScriptCDATA: Bool = false, attributeSorter: ([String: String]) -> [(String, String)] = { Array($0).sorted(by: { $0.0 < $1.0 }) }) -> String {
         var str = ""
 
         // when we use single quotes for entites, we escape them; same for double-quotes
@@ -236,7 +236,9 @@ public struct XMLNode : Hashable {
         entities.insert(quote == "\"" ? .quot : .apos)
 
         if isDocument {
-            str += declaration // the document header is the XML declaration
+            if let declaration = declaration {
+                str += declaration // the document header is the XML declaration
+            }
         } else {
             str += "<" + elementName
             for (key, value) in attributeSorter(attributes) {
@@ -404,7 +406,7 @@ public struct XMLNode : Hashable {
         }
 
         func parser(_ parser: XMLParserType, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
-            elements.append(XMLNode(elementName: qName ?? elementName, attributes: attributeDict, children: [], namespaceURI: namespaceURI, qualifiedName: qName, namespaces: self.namespaces.compactMapValues(\.last)))
+            elements.append(XMLNode(elementName: elementName, attributes: attributeDict, children: [], namespaceURI: namespaceURI, qualifiedName: qName, namespaces: self.namespaces.compactMapValues(\.last)))
         }
 
         func parser(_ parser: XMLParserType, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
