@@ -1,3 +1,9 @@
+## 0.3.0
+
+Released 2024-05-26
+
+  - Update namespace handling
+
 ## 0.2.0
 
 Released 2024-05-26
