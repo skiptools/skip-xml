@@ -299,7 +299,7 @@ public struct XMLNode : Hashable {
     }
 
     /// Parses the given `Data` and returns an `XMLNode`
-    public static func parse(data: Data, options: Options = [.resolveExternalEntities, .reportNamespacePrefixes, .processNamespaces], entityResolver: ((_ name: String, _ systemID: String?) -> (Data?))? = nil) throws -> XMLNode {
+    public static func parse(data: Data, options: Options = [], entityResolver: ((_ name: String, _ systemID: String?) -> (Data?))? = nil) throws -> XMLNode {
         let delegate = ParserDelegate()
         if let entityResolver = entityResolver {
             delegate.entityResolver = entityResolver
@@ -336,6 +336,14 @@ public struct XMLNode : Hashable {
         // reader.parse(org.xml.sax.InputSource(java.io.ByteArrayInputStream(data.platformData)))
 
         let parserFactory = javax.xml.parsers.SAXParserFactory.newInstance()
+        parserFactory.setValidating(false) // we don't want to load external DTDs
+        parserFactory.setNamespaceAware(options.contains(.processNamespaces))
+        try? parserFactory.setFeature("http://xml.org/sax/features/validation", false)
+        try? parserFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false)
+        try? parserFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+        try? parserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false)
+        try? parserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+
         let parser = parserFactory.newSAXParser()
         parser.setProperty("http://xml.org/sax/properties/lexical-handler", delegate)
         parser.parse(java.io.ByteArrayInputStream(data.platformData), delegate)
@@ -396,7 +404,7 @@ public struct XMLNode : Hashable {
         }
 
         func parser(_ parser: XMLParserType, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
-            elements.append(XMLNode(elementName: elementName, attributes: attributeDict, children: [], namespaceURI: namespaceURI, qualifiedName: qName, namespaces: self.namespaces.compactMapValues(\.last)))
+            elements.append(XMLNode(elementName: qName ?? elementName, attributes: attributeDict, children: [], namespaceURI: namespaceURI, qualifiedName: qName, namespaces: self.namespaces.compactMapValues(\.last)))
         }
 
         func parser(_ parser: XMLParserType, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
@@ -471,7 +479,7 @@ public struct XMLNode : Hashable {
         override func endEntity(name: String) {
         }
 
-        override func startDTD(name: String, publicId: String, systemId: String) {
+        override func startDTD(name: String?, publicId: String?, systemId: String?) {
         }
 
         override func endDTD() {

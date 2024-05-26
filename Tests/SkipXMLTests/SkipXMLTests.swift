@@ -12,17 +12,25 @@ import SkipXML
 final class SkipXMLTests: XCTestCase {
     func testSkipXML() throws {
         // parse then re-serialize the given XML String
-        func roundtrip(xml: String) throws -> String {
+        func roundtrip(xml: String, verify: Bool = true) throws -> String {
             let xmlData = xml.data(using: String.Encoding.utf8) ?? Data()
-            let str = try XMLNode.parse(data: xmlData, options: [.processNamespaces]).xmlString()
+            let node = try XMLNode.parse(data: xmlData)
+            let str = node.xmlString()
             #if os(macOS)
             // when running on macOS, use the built-in XMLDocument's serialization and compare the  output
             let str2 = try XMLDocument(data: xmlData).xmlData(options: [.nodePreserveCDATA])
             let xmlStr2 = String(data: str2, encoding: .utf8)
-            //return xmlStr2 ?? ""
-            XCTAssertEqual(str, xmlStr2, "XMLNode serialization should match XMLDocument")
+            //print(xmlStr2 ?? "")
+            if verify { // only verify if we are instructed to do so
+                XCTAssertEqual(str, xmlStr2 ?? "", "XMLNode serialization should match XMLDocument")
+            }
             #endif
             return str
+        }
+
+        func resource(named name: String) throws -> String {
+            let url = try XCTUnwrap(Bundle.module.url(forResource: name, withExtension: nil))
+            return try String(contentsOf: url)
         }
 
         XCTAssertEqual(try roundtrip(xml: #"<a/>"#), """
@@ -126,6 +134,59 @@ final class SkipXMLTests: XCTestCase {
         XCTAssertEqual(try roundtrip(xml: #"<root><element1><subelement1><subsubelement1>value1</subsubelement1></subelement1><subelement2><subsubelement2>value2</subsubelement2></subelement2></element1></root>"#), """
         <?xml version="1.0"?><root><element1><subelement1><subsubelement1>value1</subsubelement1></subelement1><subelement2><subsubelement2>value2</subsubelement2></subelement2></element1></root>
         """)
-    }
 
+        // we do not verify these documents because macOS XMLDocument has different spacing and element ordering
+
+        XCTAssertEqual(try roundtrip(xml: resource(named: "vmap.xml"), verify: false), """
+<?xml version="1.0"?><vmap:VMAP version="1.0" xmlns:uo="uo" xmlns:vmap="http://www.iab.net/vmap-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <vmap:Extensions>
+    <uo:unicornOnce></uo:unicornOnce>
+    <uo:contentImpressions></uo:contentImpressions>
+    <uo:requestParameters></uo:requestParameters>
+  </vmap:Extensions>
+</vmap:VMAP>
+""")
+
+        XCTAssertEqual(try roundtrip(xml: resource(named: "ocf.xml"), verify: false), """
+<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"></rootfile>
+  </rootfiles>
+  
+  <metadata xmlns="http://purl.org/dc/elements/1.1/">
+    <identifier id="pub-id">urn:uuid:pubid</identifier>
+  </metadata>
+</container>
+""")
+
+        XCTAssertEqual(try roundtrip(xml: resource(named: "atom.xml"), verify: false), """
+<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title>Example Feed</title>
+  <subtitle>A subtitle.</subtitle>
+  <link href="http://example.org/feed/" rel="self"></link>
+  <link href="http://example.org/"></link>
+  <id>urn:uuid:60a76c80-d399-11d9-b91C-0003939e0af6</id>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <entry>
+    <title>Atom-Powered Robots Run Amok</title>
+    <dc:language>en-us</dc:language>
+    <link href="http://example.org/2003/12/13/atom03"></link>
+    <link href="http://example.org/2003/12/13/atom03.html" rel="alternate" type="text/html"></link>
+    <link href="http://example.org/2003/12/13/atom03/edit" rel="edit"></link>
+    <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+    <updated>2003-12-13T18:30:02Z</updated>
+    <summary>Some text.</summary>
+    <author>
+      <name>John Doe</name>
+      <email>johndoe@example.com</email>
+    </author>
+  </entry>
+</feed>
+""")
+
+        // this is a big file (207K), so we don't verify the actual contents
+        let xmlContents = try roundtrip(xml: resource(named: "xml.xml"), verify: false)
+        XCTAssertTrue(xmlContents.contains("The XML design should be prepared quickly"))
+
+    }
 }
