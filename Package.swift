@@ -9,8 +9,8 @@ let package = Package(
         .library(name: "SkipXML", targets: ["SkipXML"]),
     ],
     dependencies: [
-        .package(url: "https://source.skip.tools/skip.git", from: "0.7.1"),
-        .package(url: "https://source.skip.tools/skip-foundation.git", from: "0.3.0"),
+        .package(url: "https://source.skip.tools/skip.git", from: "0.8.45"),
+        .package(url: "https://source.skip.tools/skip-foundation.git", from: "0.6.9"),
     ],
     targets: [
         .target(name: "SkipXML", dependencies: [
