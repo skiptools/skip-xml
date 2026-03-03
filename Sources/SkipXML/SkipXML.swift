@@ -11,7 +11,6 @@ import protocol Foundation.XMLParserDelegate
 import Foundation
 
 #if !SKIP
-import class ObjectiveC.NSObject
 typealias ParserDelegateType = XMLParserDelegate
 typealias LexicalDelegateType = NSObject
 typealias XMLParserType = XMLParser
