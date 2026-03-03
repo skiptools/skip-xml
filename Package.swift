@@ -15,7 +15,8 @@ let package = Package(
     targets: [
         .target(name: "SkipXML", dependencies: [
             .product(name: "SkipFoundation", package: "skip-foundation")
-        ], plugins: [.plugin(name: "skipstone", package: "skip")]),
+        ], linkerSettings: [.linkedLibrary("z", .when(platforms: [.linux, .android]))],
+        plugins: [.plugin(name: "skipstone", package: "skip")]),
         .testTarget(name: "SkipXMLTests", dependencies: [
             "SkipXML",
             .product(name: "SkipTest", package: "skip")
