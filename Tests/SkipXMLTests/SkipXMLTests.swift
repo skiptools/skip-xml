@@ -198,4 +198,100 @@ final class SkipXMLTests: XCTestCase {
         XCTAssertTrue(xmlContents.contains("The XML design should be prepared quickly"))
 
     }
+
+    func testParseString() throws {
+        let node = try XMLNode.parse(string: "<root><child>Hello</child></root>")
+        XCTAssertEqual(node.elementChildren.count, 1)
+        let root = node.elementChildren[0]
+        XCTAssertEqual(root.elementName, "root")
+        XCTAssertEqual(root.elementChildren[0].stringContent, "Hello")
+    }
+
+    func testChildElementsNamed() throws {
+        let node = try XMLNode.parse(string: "<root><item>A</item><other>B</other><item>C</item></root>")
+        let root = node.elementChildren[0]
+        let items = root.childElements(named: "item")
+        XCTAssertEqual(items.count, 2)
+        XCTAssertEqual(items[0].stringContent, "A")
+        XCTAssertEqual(items[1].stringContent, "C")
+
+        let others = root.childElements(named: "other")
+        XCTAssertEqual(others.count, 1)
+        XCTAssertEqual(others[0].stringContent, "B")
+
+        let missing = root.childElements(named: "nonexistent")
+        XCTAssertEqual(missing.count, 0)
+    }
+
+    func testFirstChildElementNamed() throws {
+        let node = try XMLNode.parse(string: "<root><a>1</a><b>2</b><a>3</a></root>")
+        let root = node.elementChildren[0]
+
+        let first = root.firstChildElement(named: "a")
+        XCTAssertNotNil(first)
+        XCTAssertEqual(first?.stringContent, "1")
+
+        let b = root.firstChildElement(named: "b")
+        XCTAssertNotNil(b)
+        XCTAssertEqual(b?.stringContent, "2")
+
+        XCTAssertNil(root.firstChildElement(named: "missing"))
+    }
+
+    func testDescendantsNamed() throws {
+        let xml = """
+        <root>
+            <a>1</a>
+            <b><a>2</a><c><a>3</a></c></b>
+            <a>4</a>
+        </root>
+        """
+        let node = try XMLNode.parse(string: xml)
+        let root = node.elementChildren[0]
+
+        let allAs = root.descendants(named: "a")
+        XCTAssertEqual(allAs.count, 4)
+        XCTAssertEqual(allAs[0].trimmedStringContent, "1")
+        XCTAssertEqual(allAs[1].trimmedStringContent, "2")
+        XCTAssertEqual(allAs[2].trimmedStringContent, "3")
+        XCTAssertEqual(allAs[3].trimmedStringContent, "4")
+
+        let allCs = root.descendants(named: "c")
+        XCTAssertEqual(allCs.count, 1)
+
+        XCTAssertEqual(root.descendants(named: "nonexistent").count, 0)
+    }
+
+    func testRemoveChildrenNamed() throws {
+        let node = try XMLNode.parse(string: "<root><keep>A</keep><remove>B</remove><keep>C</keep><remove>D</remove></root>")
+        var root = node.elementChildren[0]
+
+        let removed = root.removeChildren(named: "remove")
+        XCTAssertEqual(removed, 2)
+        XCTAssertEqual(root.elementChildren.count, 2)
+        XCTAssertEqual(root.elementChildren[0].elementName, "keep")
+        XCTAssertEqual(root.elementChildren[1].elementName, "keep")
+
+        let removedNone = root.removeChildren(named: "nonexistent")
+        XCTAssertEqual(removedNone, 0)
+        XCTAssertEqual(root.elementChildren.count, 2)
+    }
+
+    func testTrimmedStringContent() throws {
+        let node = try XMLNode.parse(string: "<root>  hello world  </root>")
+        let root = node.elementChildren[0]
+        XCTAssertEqual(root.stringContent, "  hello world  ")
+        XCTAssertEqual(root.trimmedStringContent, "hello world")
+    }
+
+    func testChildContentTrimmed() throws {
+        let xml = "<person><name> Alice </name><age>30</age><city>NYC</city></person>"
+        let node = try XMLNode.parse(string: xml)
+        let person = node.elementChildren[0]
+
+        XCTAssertEqual(person.childContentTrimmed(forElementName: "name"), "Alice")
+        XCTAssertEqual(person.childContentTrimmed(forElementName: "age"), "30")
+        XCTAssertEqual(person.childContentTrimmed(forElementName: "city"), "NYC")
+        XCTAssertNil(person.childContentTrimmed(forElementName: "missing"))
+    }
 }
