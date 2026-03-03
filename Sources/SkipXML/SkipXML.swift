@@ -156,49 +156,47 @@ public struct XMLNode : Hashable {
         return self
     }
 
-    /// Returns an array of child elements with the given name and optional namespace.
-    /// - Parameters:
-    ///   - elementName: the element name of the child
-    ///   - namespace: the list of namespaces
-    /// - Returns: the filtered list of child elements matching the name and namespace URI.
-//    public func childElements(named elementName: String, namespaceURI: String? = nil) -> [XMLNode] {
-//        if let namespaceURI = namespaceURI {
-//            // there may be more than a single alias to a given namespace
-//            guard let prefixes = self.namespaces?.filter({ $0.value == namespaceURI }).keys,
-//                    !prefixes.isEmpty else {
-//                return []
-//            }
-//            let elementNames = Set(prefixes.map({ $0 + ":" + elementName }))
-//            return self.elementChildren.filter { element in
-//                elementNames.contains(element.elementName)
-//            }
-//        } else {
-//            return self.elementChildren
-//        }
-//    }
+    /// Returns an array of child elements with the given name.
+    /// - Parameter elementName: the element name to filter by
+    /// - Returns: the filtered list of child elements matching the name.
+    public func childElements(named elementName: String) -> [XMLNode] {
+        self.elementChildren.filter { $0.elementName == elementName }
+    }
 
-    /// Returns the value of the given attribute, optionally mapped with the given URL
-    /// - Parameters:
-    ///   - key: the attribute key
-    ///   - namespace: the namespace of the key
-    /// - Returns: the value of the attribute
-//    public func attributeValue(key: String, namespaceURI: String? = nil) -> String? {
-//        if let namespaceURI = namespaceURI {
-//            // there may be more than a single alias to a given namespace
-//            guard let prefixes = self.namespaces?.filter({ $0.value == namespaceURI }).keys,
-//                    !prefixes.isEmpty else {
-//                return nil
-//            }
-//            for pfx in prefixes {
-//                if let value = self.attributes[pfx + ":" + key] {
-//                    return value
-//                }
-//            }
-//            return nil
-//        } else {
-//            return self.attributes[key]
-//        }
-//    }
+    /// Returns the first child element with the given name, or nil.
+    /// - Parameter elementName: the element name to search for
+    /// - Returns: the first matching child element, or nil.
+    public func firstChildElement(named elementName: String) -> XMLNode? {
+        self.elementChildren.first(where: { $0.elementName == elementName })
+    }
+
+    /// Recursively finds all descendant elements with the given name.
+    /// - Parameter elementName: the element name to search for
+    /// - Returns: all matching elements in document order.
+    public func descendants(named elementName: String) -> [XMLNode] {
+        var result: [XMLNode] = []
+        for child in elementChildren {
+            if child.elementName == elementName {
+                result.append(child)
+            }
+            result.append(contentsOf: child.descendants(named: elementName))
+        }
+        return result
+    }
+
+    /// Removes all child elements with the given name.
+    /// - Parameter elementName: the element name to remove
+    /// - Returns: the number of children removed.
+    @discardableResult public mutating func removeChildren(named elementName: String) -> Int {
+        let before = children.count
+        children = children.filter { child in
+            if case .element(let el) = child, el.elementName == elementName {
+                return false
+            }
+            return true
+        }
+        return before - children.count
+    }
 
 
     /// Returns the string with the given XML entites escaped; the default does not include single apostrophes
@@ -293,6 +291,14 @@ public struct XMLNode : Hashable {
         public init(rawValue: Int) {
             self.rawValue = rawValue
         }
+    }
+
+    /// Parses the given XML string and returns an `XMLNode`
+    public static func parse(string: String, options: Options = [], entityResolver: ((_ name: String, _ systemID: String?) -> (Data?))? = nil) throws -> XMLNode {
+        guard let data = string.data(using: String.Encoding.utf8) else {
+            throw Errors.unknownParseError
+        }
+        return try parse(data: data, options: options, entityResolver: entityResolver)
     }
 
     /// Parses the given `Data` and returns an `XMLNode`
@@ -531,6 +537,16 @@ public extension XMLNode {
     /// Join together all the child contents that are strings or CDATA blocks
     var stringContent: String {
         childContent.joined()
+    }
+
+    /// The trimmed string content with leading and trailing whitespace removed.
+    var trimmedStringContent: String {
+        stringContent.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+    }
+
+    /// Returns the trimmed string content of the first child element with the given name, or nil if no such child exists.
+    func childContentTrimmed(forElementName elementName: String) -> String? {
+        firstChildElement(named: elementName)?.trimmedStringContent
     }
 
     /// Converts the current node into a dictionary of element children names and the trimmed content of their joined string children.
