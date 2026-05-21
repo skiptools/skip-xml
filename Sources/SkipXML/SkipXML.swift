@@ -281,7 +281,7 @@ public struct XMLNode : Hashable {
     }
 
     /// Options for configuring the `XMLParser`
-    public struct Options: OptionSet, Hashable {
+    public struct Options: OptionSet, Hashable, Sendable {
         public let rawValue: Int
 
         public static let resolveExternalEntities = Options(rawValue: 1 << 0)
